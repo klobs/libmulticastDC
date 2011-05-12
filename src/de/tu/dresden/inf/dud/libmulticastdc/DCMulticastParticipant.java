@@ -15,6 +15,7 @@ public class DCMulticastParticipant implements Observer{
 	private Participant assocParticipant = null;
 	private Connection  assocConnection  = null;
 	
+	
 	private HashMap<Long,DCMulticastChannel> multicastChannels = new HashMap<Long,DCMulticastChannel>();
 	
 	public Connection getAssocConnection(){
@@ -33,7 +34,7 @@ public class DCMulticastParticipant implements Observer{
 	}
 	
 	public DCMulticastChannel listenToMulicastChannel(long channelNo){
-		DCMulticastChannel dcmc = new DCMulticastChannel(channelNo);
+		DCMulticastChannel dcmc = new DCMulticastChannel(channelNo, this);
 		return dcmc;
 	}
 	
@@ -57,11 +58,19 @@ public class DCMulticastParticipant implements Observer{
 					Long channelNo = Long.valueOf(Util.stuffBytesIntoLong(Util
 							.getFirstBytes(m.getPayload(), 8)));
 					
-					getDCMulticastChannel(channelNo);
+					byte[] message = Util.getLastBytes(m.getPayload(), m.getPayloadLength() - 8);
+					
+					getDCMulticastChannel(channelNo).multicastMessageArrived(message);
 				}
 			}
 		}
 	}
 
+	public void write(long channelNo, byte[] message){
+		getDCMulticastChannel(channelNo).write(message);
+	}
 	
+	protected void write(byte[] multicastMessage){
+		
+	}
 }
