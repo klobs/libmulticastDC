@@ -6,19 +6,16 @@ import de.tu.dresden.dud.dc.Util;
 
 public class DCMulticastChannel {
 
-	private long assocChannelNo;
 	private DCMulticastParticipant assocMulticastParticipant;
-	private byte[] channelPrefix = null;
+	private DCMulticastChannelPrefix channelPrefix = null;
 	private LinkedBlockingQueue<byte[]> messageQueue = new LinkedBlockingQueue<byte[]>();
-	
-	
-	public DCMulticastChannel(long channelNo, DCMulticastParticipant amp){
-		assocChannelNo = channelNo;
-		channelPrefix = Util.fillAndMergeSending(new byte[8], Util
-				.stuffLongIntoLong(assocChannelNo));
+
+	public DCMulticastChannel(DCMulticastChannelPrefix channelNo, DCMulticastParticipant amp){
+		channelPrefix = channelNo;
 		
 		assocMulticastParticipant = amp;
 	}
+
 	
 	protected void multicastMessageArrived(byte[] message){
 		try {
@@ -40,7 +37,7 @@ public class DCMulticastChannel {
 	
 	public void write(byte[] message){
 		assocMulticastParticipant.write(Util
-				.concatenate(channelPrefix, message));
+				.concatenate(channelPrefix.getPrefix(), message));
 	}
 	
 }

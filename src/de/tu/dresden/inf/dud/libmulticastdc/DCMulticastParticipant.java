@@ -16,7 +16,12 @@ public class DCMulticastParticipant implements Observer{
 	private Connection  assocConnection  = null;
 	
 	
-	private HashMap<Long,DCMulticastChannel> multicastChannels = new HashMap<Long,DCMulticastChannel>();
+	private HashMap<DCMulticastChannelPrefix,DCMulticastChannel> multicastChannels = new HashMap<DCMulticastChannelPrefix,DCMulticastChannel>();
+	
+	protected static byte[] generatePrefix(final long channelNo){
+		return Util.fillAndMergeSending(new byte[8], Util
+				.stuffLongIntoLong(channelNo));
+	}
 	
 	public Connection getAssocConnection(){
 		return assocConnection;
@@ -26,15 +31,25 @@ public class DCMulticastParticipant implements Observer{
 		return assocParticipant;
 	}
 
-	public DCMulticastChannel getDCMulticastChannel(long channelNo){
-		DCMulticastChannel dcmc = multicastChannels.get(Long.valueOf(channelNo));
+	public DCMulticastChannel getDCMulticastChannel(DCMulticastChannelPrefix channelNo){
+		DCMulticastChannel dcmc = multicastChannels.get(channelNo);
 		if (dcmc != null)
 			return dcmc;
 		return listenToMulicastChannel(channelNo);
 	}
 	
+	public boolean islisteningToMulticastChannel(DCMulticastChannelPrefix channelNo){
+		return multicastChannels.containsKey(channelNo);
+	}
+	
 	public DCMulticastChannel listenToMulicastChannel(long channelNo){
+		return listenToMulicastChannel(new DCMulticastChannelPrefix(
+				generatePrefix(channelNo)));
+	}
+	
+	public DCMulticastChannel listenToMulicastChannel(DCMulticastChannelPrefix channelNo){
 		DCMulticastChannel dcmc = new DCMulticastChannel(channelNo, this);
+		multicastChannels.put(channelNo, dcmc);
 		return dcmc;
 	}
 	
@@ -54,23 +69,26 @@ public class DCMulticastParticipant implements Observer{
 			if(arg instanceof ManagementMessageAdded){
 				ManagementMessageAdded m = (ManagementMessageAdded) arg;
 				
-				if (m.getPayloadLength() >8){
-					Long channelNo = Long.valueOf(Util.stuffBytesIntoLong(Util
-							.getFirstBytes(m.getPayload(), 8)));
-					
+				if (m.getPayloadLength() > 8) {
+					DCMulticastChannelPrefix channelNo = new DCMulticastChannelPrefix(
+							Util.getFirstBytes(m.getPayload(), 8));
+	
 					byte[] message = Util.getLastBytes(m.getPayload(), m.getPayloadLength() - 8);
 					
-					getDCMulticastChannel(channelNo).multicastMessageArrived(message);
+					if(islisteningToMulticastChannel(channelNo))
+						getDCMulticastChannel(channelNo).multicastMessageArrived(message);
 				}
 			}
 		}
 	}
 
-	public void write(long channelNo, byte[] message){
+	public void write(DCMulticastChannelPrefix channelNo, byte[] message){
 		getDCMulticastChannel(channelNo).write(message);
 	}
 	
 	protected void write(byte[] multicastMessage){
-		
+		if (assocConnection != null)
+			assocConnection.feedWorkCycleManager(multicastMessage);
+			
 	}
 }
