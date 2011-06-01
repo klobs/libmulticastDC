@@ -1,6 +1,7 @@
 package de.tu.dresden.inf.dud.libmulticastdc;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import de.tu.dresden.dud.dc.Util;
 
@@ -16,6 +17,9 @@ public class DCMulticastChannel {
 		assocMulticastParticipant = amp;
 	}
 
+	public DCMulticastParticipant getDCMulticastParticipant(){
+		return assocMulticastParticipant;
+	}
 	
 	protected void multicastMessageArrived(byte[] message){
 		try {
@@ -25,6 +29,17 @@ public class DCMulticastChannel {
 		}
 	}
 
+	public byte[] poll(long timeout,
+            TimeUnit unit){
+		try {
+			return messageQueue.poll(timeout, unit);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		return new byte[0];
+	}
+	
 	public byte[] read(){
 		try {
 			return messageQueue.take();
